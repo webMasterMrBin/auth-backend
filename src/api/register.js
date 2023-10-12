@@ -1,8 +1,9 @@
 const chalk = require('chalk');
+const { limiter } = require('./middleware');
 const userDb = require('../db');
 
 module.exports = app => {
-  app.post('/api/register', async (req, res) => {
+  app.post('/api/register', limiter, async (req, res) => {
     const resSendError = () => {
       res.status(500).json({ message: 'something wrong! please connect admin', status: 0 });
     };

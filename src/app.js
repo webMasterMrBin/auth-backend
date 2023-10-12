@@ -6,9 +6,10 @@ const port = 3000;
 
 app.use(express.static(path.join(__dirname, '../public')));
 app.use(express.json());
+
 // 开发环境模拟网络delay
 if (process.env.NODE_ENV == 'DEV') {
-  app.use(async (req, res, next) => {
+  app.use('/api', async (req, res, next) => {
     // 每个请求模拟 100ms延时
     const delay = 100;
     await new Promise(res => {

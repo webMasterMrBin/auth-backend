@@ -1,6 +1,17 @@
 const jwt = require('jsonwebtoken');
 const SECRET_KEY = require('./secretkey');
+const { rateLimit } = require('express-rate-limit');
 
+/** ip请求限制 */
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
+  standardHeaders: 'draft-7', // draft-6: `RateLimit-*` headers; draft-7: combined `RateLimit` header
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  message: { message: 'Too many requests, please try again later.', status: 0 },
+});
+
+/** 身份认证 */
 const apiAuth = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')?.[1];
 
@@ -14,4 +25,4 @@ const apiAuth = (req, res, next) => {
   });
 };
 
-module.exports = { apiAuth };
+module.exports = { apiAuth, limiter };
