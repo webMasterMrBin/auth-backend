@@ -1,10 +1,16 @@
 const jwt = require('jsonwebtoken');
 const chalk = require('chalk');
+const { JWT_SECRET_KEY, LOGIN_MAXAGE } = require('../config');
 const userDb = require('../db');
-const SECRET_KEY = require('./secretkey');
 const { apiAuth, limiter } = require('./middleware');
 
 module.exports = app => {
+  app.get('/api/session', (req, res) => {
+    req.session.test = true;
+    console.log('req.session', req.session);
+    res.json({ message: 'session test', status: 1 });
+  });
+
   app.get('/api/test', apiAuth, (req, res) => {
     res.json({ message: '登录状态有效!', status: 1 });
   });
@@ -24,9 +30,9 @@ module.exports = app => {
 
       /** 账户有效下发token */
       if (_id) {
-        const token = jwt.sign(req.body, SECRET_KEY, { expiresIn: 60 });
+        const token = jwt.sign(req.body, JWT_SECRET_KEY, { expiresIn: `${LOGIN_MAXAGE}` });
         // 10分钟
-        res.cookie('token', token, { maxAge: 1000 * 60 });
+        res.cookie('token', token, { maxAge: LOGIN_MAXAGE });
 
         res.json({ message: 'login success', status: 1 });
       } else {
@@ -43,7 +49,7 @@ module.exports = app => {
     }
 
     /** 登录过系统有有效的token 继续调用登录逻辑 */
-    jwt.verify(token, SECRET_KEY, err => {
+    jwt.verify(token, JWT_SECRET_KEY, err => {
       // token无效下发更新新的token给客户端
       if (err) {
         login();
