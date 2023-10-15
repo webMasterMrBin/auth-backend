@@ -4,7 +4,7 @@ const { JWT_SECRET_KEY, LOGIN_MAXAGE } = require('../config');
 const userDb = require('../db');
 const { apiAuth, limiter } = require('./middleware');
 
-module.exports = app => {
+module.exports = (app, { redisStore }) => {
   app.get('/api/session', (req, res) => {
     req.session.test = true;
     console.log('req.session', req.session);
@@ -31,8 +31,12 @@ module.exports = app => {
       /** 账户有效下发token */
       if (_id) {
         const token = jwt.sign(req.body, JWT_SECRET_KEY, { expiresIn: `${LOGIN_MAXAGE}` });
-        // 10分钟
+        // token存在cookie发给client
         res.cookie('token', token, { maxAge: LOGIN_MAXAGE });
+        // 保存登录会话
+        req.session.username = username;
+        console.log('req.session', req.session);
+        console.log('redisStore', redisStore.all((err, cb) => console.log('cb', cb)));
 
         res.json({ message: 'login success', status: 1 });
       } else {
