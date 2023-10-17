@@ -25,4 +25,26 @@ const apiAuth = (req, res, next) => {
   });
 };
 
-module.exports = { apiAuth, limiter };
+/** 相同用户名的登录状态session存储数量上限(for 登录设备数量上限) */
+const limitSessionCount = redisStore => async (req, res, next) => {
+  const { username } = req.session;
+
+  redisStore.all((err, sessions) => {
+    if (err) {
+      res.status(500).json({ message: 'something wrong', status: 0 });
+      return;
+    }
+
+    // 当同一用户登录状态大于等于3时提示登录失败
+    const isLimitSession = sessions.filter(session => session.username === username).length >= 3;
+    if (isLimitSession) {
+      res
+        .status(500)
+        .json({ message: 'This account is logged into too many devices, please confirm and try again.', status: 0 });
+      return;
+    }
+    next();
+  });
+};
+
+module.exports = { apiAuth, limiter, limitSessionCount };

@@ -2,20 +2,14 @@ const jwt = require('jsonwebtoken');
 const chalk = require('chalk');
 const { JWT_SECRET_KEY, LOGIN_MAXAGE } = require('../config');
 const userDb = require('../db');
-const { apiAuth, limiter } = require('./middleware');
+const { apiAuth, limiter, limitSessionCount } = require('./middleware');
 
 module.exports = (app, { redisStore }) => {
-  app.get('/api/session', (req, res) => {
-    req.session.test = true;
-    console.log('req.session', req.session);
-    res.json({ message: 'session test', status: 1 });
-  });
-
   app.get('/api/test', apiAuth, (req, res) => {
     res.json({ message: '登录状态有效!', status: 1 });
   });
 
-  app.post('/api/login', limiter, async (req, res) => {
+  app.post('/api/login', limiter, limitSessionCount(redisStore), async (req, res) => {
     const token = req.headers.authorization?.split(' ')?.[1];
     const { username, password } = req.body;
 
@@ -35,8 +29,6 @@ module.exports = (app, { redisStore }) => {
         res.cookie('token', token, { maxAge: LOGIN_MAXAGE });
         // 保存登录会话
         req.session.username = username;
-        console.log('req.session', req.session);
-        console.log('redisStore', redisStore.all((err, cb) => console.log('cb', cb)));
 
         res.json({ message: 'login success', status: 1 });
       } else {
