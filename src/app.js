@@ -1,4 +1,6 @@
 const express = require('express');
+const https = require('https');
+const fs = require('fs');
 const app = express();
 const path = require('path');
 const api = require('./api');
@@ -30,6 +32,17 @@ initSession(app).then(redisStore => {
 });
 
 // 启动服务器
+// https
+//   .createServer(
+//     {
+//       key: fs.readFileSync(path.join(__dirname, '../private.key')),
+//       cert: fs.readFileSync(path.join(__dirname, '../certificate.crt')),
+//     },
+//     app,
+//   )
+//   .listen(port, () => {
+//     console.log(`auth Server listening at https://127.0.0.1:${port}`);
+//   });
 app.listen(port, () => {
   console.log(`auth Server listening at http://127.0.0.1:${port}`);
 });
