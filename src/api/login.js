@@ -26,7 +26,7 @@ module.exports = (app, { redisStore }) => {
       if (_id) {
         const token = jwt.sign(req.body, JWT_SECRET_KEY, { expiresIn: `${LOGIN_MAXAGE}` });
         // token存在cookie发给client
-        res.cookie('token', token, { maxAge: LOGIN_MAXAGE });
+        res.cookie('token', token, { maxAge: LOGIN_MAXAGE, httpOnly: true });
         // 保存登录会话
         req.session.username = username;
 

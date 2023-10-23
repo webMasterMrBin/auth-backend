@@ -13,15 +13,27 @@ const limiter = rateLimit({
 
 /** 身份认证 */
 const apiAuth = (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')?.[1];
+  const { token } = req.cookies;
 
   jwt.verify(token, JWT_SECRET_KEY, err => {
-    if (err) {
-      res.status(500).json({ message: 'token is inValid! please re-login', status: 0 });
-      return;
-    }
+    const isLogin = req.path === '/login';
 
-    next();
+    if (err || !token) {
+      if (!isLogin) {
+        res.redirect('/login');
+      }
+
+      next();
+      // res.status(500).json({ message: 'token is inValid! please re-login', status: 0 });
+      // return;
+    } else {
+      if (isLogin) {
+        res.send('已登录');
+        return;
+      }
+
+      next();
+    }
   });
 };
 
