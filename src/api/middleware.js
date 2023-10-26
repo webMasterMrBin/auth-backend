@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
-const { JWT_SECRET_KEY } = require('../config');
+const { JWT_SECRET_KEY, GITHUB_CLIENT_ID, GITHUB_AUTH_TOKEN } = require('../config');
 const { rateLimit } = require('express-rate-limit');
+const axios = require('axios');
+const chalk = require('chalk');
 
 /** ip请求限制 */
 const limiter = rateLimit({
@@ -12,37 +14,40 @@ const limiter = rateLimit({
 });
 
 /** 身份认证 */
-const apiAuth = (req, res, next) => {
+const apiAuth = async (req, res, next) => {
   const { token } = req.cookies;
-  const { isGithub } = req.session;
-  console.log('isGithub', isGithub);
-  // TODO github Oauth token有效期
-  if (!isGithub) {
-    jwt.verify(token, JWT_SECRET_KEY, err => {
-      const isLogin = req.path === '/login';
+  const { githubId } = req.session;
 
-      if (err || !token) {
-        if (!isLogin) {
-          res.redirect('/login');
-        }
-
-        next();
-        // res.status(500).json({ message: 'token is inValid! please re-login', status: 0 });
-        // return;
-      } else {
-        if (isLogin) {
-          res.send('已登录');
-          return;
-        }
-
-        next();
-      }
-    });
-
+  if (githubId) {
+    // TODO github Oauth token有效期 默认git token永久有效
+    // gittoken 在登录会话有效期内永久有效 如果过了系统有效期则 跳转登录页
+    // git token失效 清理登录信息
+    // res.redirect('/login');
+    next();
     return;
   }
 
-  next();
+  jwt.verify(token, JWT_SECRET_KEY, err => {
+    const isLogin = req.path === '/login';
+
+    if (err || !token) {
+      if (!isLogin) {
+        res.redirect('/login');
+        return;
+      }
+
+      next();
+      // res.status(500).json({ message: 'token is inValid! please re-login', status: 0 });
+      // return;
+    } else {
+      if (isLogin) {
+        res.send('已登录');
+        return;
+      }
+
+      next();
+    }
+  });
 };
 
 /** 相同用户名的登录状态session存储数量上限(for 登录设备数量上限) */

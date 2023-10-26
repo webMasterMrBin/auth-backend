@@ -10,6 +10,7 @@ const chalk = require('chalk');
 const api = require('./api');
 const initSession = require('./session');
 const { apiAuth } = require('./api/middleware');
+const { LOGIN_MAXAGE, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET } = require('./config');
 const port = 3000;
 
 app.use(express.static(path.join(__dirname, '../public')));
@@ -35,7 +36,7 @@ initSession(app).then(redisStore => {
   api(app, { redisStore });
 
   // github OAuth callbak
-  app.get('/callback', async (req, res) => {
+  app.get('/auth/github/callback', async (req, res) => {
     const { code } = req.query;
 
     if (code) {
@@ -43,8 +44,8 @@ initSession(app).then(redisStore => {
       const { data } = await axios
         .post('https://github.com/login/oauth/access_token', {
           code,
-          client_id: isDev && '5da64e99978d1a198b9d',
-          client_secret: isDev && 'e387adb9dea304393e4a975a546b09b136dfef22',
+          client_id: isDev && GITHUB_CLIENT_ID,
+          client_secret: isDev && GITHUB_CLIENT_SECRET,
         })
         .catch(err => {
           console.log(chalk.red(err));
@@ -54,23 +55,25 @@ initSession(app).then(redisStore => {
 
       if (data) {
         const { access_token } = qs.parse(data);
-        // TODO cookie保存git token 校验github 有效期
         /* get git account info */
-        const { data: userData } = await axios('https://api.github.com/user', {
-          headers: {
-            Authorization: `Bearer ${access_token}`,
-          },
-        }).catch(err => {
-          console.log(chalk.red(err));
-          return {};
-        });
-        console.log('userData', userData);
+        const { data: userData } = await axios
+          .get('https://api.github.com/user', {
+            headers: {
+              Authorization: `Bearer ${access_token}`,
+            },
+          })
+          .catch(err => {
+            console.log(chalk.red(err));
+            return {};
+          });
 
-        if (userData) {
+        if (userData?.login) {
           // TODO mongodb存git账户信息
           /* 会话信息中保存git账户登录信息 */
           req.session.username = userData.login;
-          req.session.isGithub = true;
+          req.session.githubId = userData.id;
+
+          res.cookie('token', access_token, { maxAge: LOGIN_MAXAGE, httpOnly: true });
 
           res.redirect('/chatroom');
           return;
