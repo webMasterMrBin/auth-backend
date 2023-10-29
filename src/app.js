@@ -1,7 +1,9 @@
 const express = require('express');
 const https = require('https');
 const fs = require('fs');
+const rfs = require('rotating-file-stream');
 const cookieParser = require('cookie-parser');
+const morgan = require('morgan');
 const app = express();
 const path = require('path');
 const qs = require('qs');
@@ -16,6 +18,13 @@ const port = 3000;
 app.use(express.static(path.join(__dirname, '../public')));
 app.use(express.json());
 app.use(cookieParser());
+
+const accessLogStream = rfs.createStream('access.log', {
+  interval: '1d', // rotate daily
+  path: path.join(__dirname, '../log'),
+});
+
+app.use(morgan('combined', { stream: accessLogStream }));
 
 const isDev = process.env.NODE_ENV == 'DEV';
 
