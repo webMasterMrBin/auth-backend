@@ -1,18 +1,16 @@
 const express = require('express');
 const https = require('https');
+const http = require('http');
 const fs = require('fs');
 const rfs = require('rotating-file-stream');
 const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
 const app = express();
 const path = require('path');
-const qs = require('qs');
-const axios = require('axios');
-const chalk = require('chalk');
 const api = require('./api');
 const initSession = require('./session');
+const initWsServer = require('./websocket');
 const { apiAuth } = require('./api/middleware');
-const { LOGIN_MAXAGE, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET } = require('./config');
 const port = 3000;
 
 app.use(express.static(path.join(__dirname, '../public')));
@@ -41,68 +39,31 @@ if (isDev) {
   });
 }
 
-initSession(app).then(redisStore => {
+initSession(app).then(({ redisStore, sessionParser }) => {
   api(app, { redisStore });
-
-  // github OAuth callbak
-  app.get('/auth/github/callback', async (req, res) => {
-    const { code } = req.query;
-
-    if (code) {
-      /* get git token */
-      const { data } = await axios
-        .post('https://github.com/login/oauth/access_token', {
-          code,
-          client_id: isDev && GITHUB_CLIENT_ID,
-          client_secret: isDev && GITHUB_CLIENT_SECRET,
-        })
-        .catch(err => {
-          console.log(chalk.red(err));
-          res.json({ message: 'github OAuth app login error', status: 0 });
-          return {};
-        });
-
-      if (data) {
-        const { access_token } = qs.parse(data);
-        /* get git account info */
-        const { data: userData } = await axios
-          .get('https://api.github.com/user', {
-            headers: {
-              Authorization: `Bearer ${access_token}`,
-            },
-          })
-          .catch(err => {
-            console.log(chalk.red(err));
-            return {};
-          });
-
-        if (userData?.login) {
-          // TODO mongodb存git账户信息
-          /* 会话信息中保存git账户登录信息 */
-          req.session.username = userData.login;
-          req.session.githubId = userData.id;
-
-          res.cookie('token', access_token, { maxAge: LOGIN_MAXAGE, httpOnly: true });
-
-          res.redirect('/chatroom');
-          return;
-        }
-        // git token失效
-        res.redirect('/login');
-      }
-
-      return;
-    }
-
-    res.redirect('/login');
-  });
 
   app.get('*', apiAuth, (req, res) => {
     res.sendFile(path.join(__dirname, '../public/main.html'));
   });
+
+  const httpServer = http.createServer(app);
+  httpServer.listen(port, () => {
+    console.log(`auth Server listening at http://127.0.0.1:${port}`);
+  });
+
+  const wss = initWsServer(httpServer);
+
+  /* use req.session in websocket */
+  httpServer.on('upgrade', (request, socket, head) => {
+    sessionParser(request, {}, () => {
+      wss.handleUpgrade(request, socket, head, function (ws) {
+        wss.emit('connection', ws, request);
+      });
+    });
+  });
 });
 
-// 启动服务器
+// 启动https
 // https
 //   .createServer(
 //     {
@@ -111,9 +72,5 @@ initSession(app).then(redisStore => {
 //     },
 //     app,
 //   )
-//   .listen(port, () => {
-//     console.log(`auth Server listening at https://127.0.0.1:${port}`);
-//   });
-app.listen(port, () => {
-  console.log(`auth Server listening at http://127.0.0.1:${port}`);
-});
+
+
