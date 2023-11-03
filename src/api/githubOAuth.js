@@ -42,6 +42,7 @@ module.exports = app => {
           /* 会话信息中保存git账户登录信息 */
           req.session.username = userData.login;
           req.session.githubId = userData.id;
+          req.session.avatar = userData.avatar_url;
 
           res.cookie('token', access_token, { maxAge: LOGIN_MAXAGE, httpOnly: true });
 

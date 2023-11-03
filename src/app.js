@@ -51,7 +51,7 @@ initSession(app).then(({ redisStore, sessionParser }) => {
     console.log(`auth Server listening at http://127.0.0.1:${port}`);
   });
 
-  const wss = initWsServer(httpServer);
+  const wss = initWsServer();
 
   /* use req.session in websocket */
   httpServer.on('upgrade', (request, socket, head) => {

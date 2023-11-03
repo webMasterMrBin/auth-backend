@@ -1,7 +1,7 @@
 const { apiAuth } = require('./middleware');
 
 module.exports = (app, { redisStore }) => {
-  app.post('/api/logout', apiAuth, (req, res) => {
+  app.get('/api/logout', apiAuth, (req, res) => {
     res.clearCookie('token');
     res.clearCookie('connect.sid');
 
@@ -10,8 +10,8 @@ module.exports = (app, { redisStore }) => {
         res.status(500).json({ message: 'something wrong', status: 0 });
         return;
       }
-
-      res.json({ message: 'logout success', status: 1 });
+      res.redirect('/login');
+      // res.json({ message: 'logout success', status: 1 });
     });
   });
 };
