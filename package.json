@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "NODE_ENV=DEV pm2 start src/app.js --name=app --attach --watch",
-    "build": "NODE_ENV=PROD node src/app.js"
+    "build": "NODE_ENV=PROD pm2 start src/app.js -i max --name=app"
   },
   "repository": {
     "type": "git",

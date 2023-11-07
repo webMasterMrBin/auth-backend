@@ -3,7 +3,9 @@ const chalk = require('chalk');
 
 const userDb = async () => {
   try {
-    await mongoose.connect(process.env.NODE_ENV === 'DEV' && 'mongodb://127.0.0.1:27017/userDb');
+    await mongoose.connect('mongodb://127.0.0.1:27017/userDb').catch(err => {
+      console.log('mongodb connect err', err);
+    });
 
     const Schema = mongoose.Schema;
 

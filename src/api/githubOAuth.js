@@ -4,7 +4,6 @@ const chalk = require('chalk');
 const { LOGIN_MAXAGE, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET } = require('../config');
 
 module.exports = app => {
-  const isDev = process.env.NODE_ENV == 'DEV';
   // github OAuth callbak
   app.get('/auth/github/callback', async (req, res) => {
     const { code } = req.query;
@@ -14,8 +13,8 @@ module.exports = app => {
       const { data } = await axios
         .post('https://github.com/login/oauth/access_token', {
           code,
-          client_id: isDev && GITHUB_CLIENT_ID,
-          client_secret: isDev && GITHUB_CLIENT_SECRET,
+          client_id: GITHUB_CLIENT_ID,
+          client_secret: GITHUB_CLIENT_SECRET,
         })
         .catch(err => {
           console.log(chalk.red(err));

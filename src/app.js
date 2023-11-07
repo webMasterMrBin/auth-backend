@@ -13,7 +13,7 @@ const initWsServer = require('./websocket');
 const { apiAuth } = require('./api/middleware');
 const port = 3000;
 
-app.use(express.static(path.join(__dirname, '../public')));
+app.use('/public', express.static(path.join(__dirname, '../public')));
 app.use(express.json());
 app.use(cookieParser());
 
@@ -48,7 +48,7 @@ initSession(app).then(({ redisStore, sessionParser }) => {
 
   const httpServer = http.createServer(app);
   httpServer.listen(port, () => {
-    console.log(`auth Server listening at http://127.0.0.1:${port}`);
+    console.log(`auth Server listening at ${port}`);
   });
 
   const wss = initWsServer();

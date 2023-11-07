@@ -5,7 +5,9 @@ const { createClient } = require('redis');
 
 /** 会话管理保存用户登录信息 */
 module.exports = async app => {
-  const redisClient = await createClient().connect().catch(console.error);
+  const redisClient = await createClient()
+    .connect()
+    .catch(console.error);
 
   const redisStore = new RedisStore({
     client: redisClient,

@@ -22,14 +22,12 @@ module.exports = () => {
     // 身份验证登录系统可用ws
     if (req.session.username) {
       ws.on('error', err => {
-        console.log('ws error1', err);
         ws.close();
       });
 
       ws.on('message', data => {
         wss.clients.forEach(client => {
           if (client.readyState === WebSocket.OPEN) {
-            console.log('server收到消息');
             const { type, content } = JSON.parse(data.toString());
 
             if (type === 'login') {
@@ -57,8 +55,6 @@ module.exports = () => {
       });
 
       ws.on('close', () => {
-        console.log('server cloese');
-
         if (sessionId) {
           loginUsers.splice(
             loginUsers.findIndex(v => v.id === sessionId),
@@ -66,7 +62,6 @@ module.exports = () => {
           );
         }
 
-        // console.log('close loginUsers', loginUsers);
         wss.clients.forEach(client => {
           if (client.readyState === WebSocket.OPEN) {
             client.send(
